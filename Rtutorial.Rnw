@@ -1,0 +1,2007 @@
+\documentclass[9pt]{beamer}
+\usepackage{hyperref}
+\usepackage{Sweave}
+\SweaveOpts{prefix.string=figures/part3}
+\xdefinecolor{darkred}{rgb}{0.545,0,0}
+\xdefinecolor{midnightblue}{rgb}{0.098,0.098,0.439}
+\xdefinecolor{steelblue}{rgb}{0.275,0.510,0.706}
+\DefineVerbatimEnvironment{Sinput}{Verbatim}{fontshape=sl,
+formatcom=\color{midnightblue},fontsize=\scriptsize}
+\DefineVerbatimEnvironment{Soutput}{Verbatim}{formatcom=\color{darkred},
+fontsize=\scriptsize}
+\DefineVerbatimEnvironment{Scode}{Verbatim}{fontshape=sl,
+formatcom=\color{blue},fontsize=\scriptsize}
+%\setkeys{Gin}{width=0.85\textwidth}
+\fvset{listparameters={\setlength{\topsep}{0pt}}} 
+\renewenvironment{Schunk}{\vspace{\topsep}}{\vspace{\topsep}}
+\newcommand{\myhref}[2]{{\color{blue}\underline{\emph{\href{#1}{#2}}}}}
+\newcommand{\myv}[1]{\verb@#1@}
+\usepackage{setspace}
+
+%\usepackage{beamerthemesplit}
+% \mode<presentation>
+% {
+% \usetheme{Warsaw}
+% %\usetheme{Pittsburgh}
+% }
+\usetheme{Boadilla}
+\usecolortheme{whale}
+\defbeamertemplate*{footline}{my infolines theme} %http://www.latex-community.org/forum/viewtopic.php?f=5&t=10735
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertsectionhead
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\setbeamertemplate{blocks}[default]
+
+\title{An R Tutorial and Reference}
+\author{S. Takahama}
+\date[2008/2012] 
+{August 2008\\{\small{(minor update November 2012)}}}
+
+\begin{document}
+
+<<label=defw,echo=False>>=
+options( width = 70 )
+Sys.setenv(PATH=paste("/opt/local/lib:",Sys.getenv("PATH"),sep=""))
+@ 
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}
+  \frametitle{Outline}
+  \tableofcontents
+%  % You might wish to add the option [pausesections]
+\end{frame}
+
+\section{Introduction}
+\begin{frame}
+\frametitle{Aquiring and processing data}
+\framesubtitle{(A simplified view)}
+\begin{center}
+\includegraphics[width=4in]{drawing-1.pdf}
+\end{center}
+\end{frame}
+
+\section{Data analysis}
+\begin{frame}
+  \frametitle{Data analysis}
+  \begin{itemize}
+  \item Reducing a large sets of numbers into a few
+    numbers (statistical summaries)
+  \item Finding relationships among variables
+    \begin{itemize}
+    \item exploratory data analysis (for hypothesis generation)
+    \item statistical inference (tests of significance, etc.)
+      \item (next step: modeling)
+    \end{itemize}
+  \item Requires algorithms for
+    \begin{itemize}
+    \item data visualization and exploratory data analysis
+      \begin{itemize}
+      \item scientific visualization - rendering objects in 3-D space
+        (don't use R)
+      \item statistical graphics (use R)
+      \end{itemize}
+    \item computation
+    \item statistical summaries/inference
+    \end{itemize}
+  \item Presentation graphics is a bonus
+  \end{itemize}
+(related topics: knowledge discovery, data mining)
+\end{frame}
+
+\begin{frame}
+\frametitle{Data models}
+\begin{itemize}
+\item Relational (think: table)
+\item Hierarchical (think: tree)
+\item Object-oriented (think: objects, getter/setters)
+\item ...?
+\end{itemize}
+see \myhref{http://www.ibm.com/developerworks/library/x-matters8/index.html}{IBM Developer Works page (D. Mertz)}
+\end{frame}
+
+\begin{frame}
+\frametitle{Data tables}
+\begin{itemize}
+\item Relation tables: set or bags (multiset) of tuples.
+\item Suited for representing many types of data for statistical
+  analysis.
+\item Some approximate classifications:
+\begin{itemize}
+\item time series - multiple time periods, single phenomena*
+  \item cross-sectional - single time period, multiple phenomena
+\item panel/longitudinal data - multiple time periods, multiple phenomena
+\end{itemize}
+\item Examine as a function of one or more ``treatments'' or
+  conditioning variables.
+\end{itemize}
+\footnotesize{* (phenomena = ``subjects'' or variables)}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Alternate representation: OLAP (hyper-)cubes}
+\begin{itemize}
+\item Data stored as array (fast computation for decision support)
+\item Roll-up, drill-down, etc.
+\end{itemize}
+\begin{center}
+\includegraphics[width=3in]{images/colos2.png}\\
+{\tiny{from http://www.research.ibm.com/journal/sj/414/colossi.html}}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Software for data analysis}
+Decisions...
+\begin{itemize}
+\item 'Package' vs. language. \emph{Tradeoffs:} ease-of-use and extensibility.
+\item Language vs. language. \emph{Tradeoffs:} expressiveness and
+  availability of applicable libraries. Also, run-time speed,
+  possibly.
+\end{itemize}
+Bottom line: there is no single language optimal for all tasks - use
+the appropriate tool for the task. Cost(s) of making the wrong
+decision: number of hypotheses that can be tested in a given time
+interval. \\
+(Seamless?)  Integration:
+\begin{itemize}
+\item Some libraries available for direct communication among software
+  products (e.g., Rpy, Omegahat project).
+\item ``Glue'' or ``code-steering'' language + data exchange using
+  standard formats.
+\end{itemize}
+\end{frame}
+
+\section{R for data analysis}
+
+\begin{frame}
+\frametitle{R is a(n) ...}
+\begin{itemize}
+\item Statistical package... (an environment in which
+  statistical methods are implemented).
+\begin{itemize}
+\item collection of convenient data structures and functions commonly
+  used in statistical data analysis.
+\item modern statistical routines implemented in R.
+\item assembly of standard and user-contributed packages.
+\end{itemize}
+\item (Turing complete) Interpreted programming language (highly
+  extendable).
+\begin{itemize}
+\item very high-level
+\item write new statistical functions in R.
+\item profile performance; find bottlenecks and write functions in
+  C/Fortran.
+\item facilities for shell commands, shell-scripting and
+  text-processing (with regular expressions).
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{R as a language}
+\begin{itemize}
+\item Modular construction of programs
+  \begin{itemize}
+  \item Functional {\scriptsize{(``operate on whole objects'')}}
+  \item Object-oriented {\scriptsize{(encapsulation)}}
+  \end{itemize}
+\item Syntax of S with semantics from Scheme
+  \begin{itemize}
+  \item Scheme - dialect of Lisp
+  \item S - developed at Bell Labs (ca. 1975; significant revisions in
+    1988 and 1993)
+    \begin{itemize}
+    \item "to turn ideas into software, quickly and faithfully" - John Chambers
+    \item ACM award to J. Chambers - ``For The S system, which has forever
+      altered how people analyze, visualize, and manipulate data.''
+      {\scriptsize{(other ACM awards include: UNIX, TeX, postscript, WWW,
+          Apache, Java)}}.
+    \item implementations: S-PLUS (commercial) and R (free software).
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{R data types (objects) - overview}
+\begin{itemize}
+\item Class of an object determines method dispatched for generic
+  functions
+\item Mode attribute approximately describes storage mode
+\end{itemize}
+\begin{center}
+{\small{\begin{tabular*}{3.8in}[t]{l|ccc}
+\hline\hline
+& \multicolumn{3}{c}{Object class}\\
+Mode & 1-D & 2-D & N-D \\
+\hline
+atomic
+& \begin{minipage}[c]{1in}\center
+    \emph{vector}:\\ logical,integer,numeric,\\ character,factor
+      \end{minipage}&
+matrix & array \\ 
+\hline
+\parbox[c]{0.8in}{recursive\\(heterogeneous)} & list
+& \begin{minipage}[c]{1in}\center matrix\\ data.frame\end{minipage} & array\\
+\hline\hline
+\end{tabular*}}}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Instantiation}
+Creation of object instance is straightforward:
+<<>>=
+(x <- vector(length=5,mode="numeric"))
+(x <- matrix(nrow=3,ncol=2))
+(x <- list())
+(x <- data.frame(string="",numeric=0))
+@ 
+
+But generally, explicit call to these functions are not necessary - (no
+variable declarations required in R).\\
+
+$\to$ Also see as.matrix(), as.data.frame(), as.list(), c(), unlist(),
+etc. for interconversions. Test for class using is.matrix(), etc.
+\end{frame}
+
+\begin{frame}
+\frametitle{Matrices vs. data frames}
+Considerations:
+\begin{itemize}
+\item Matrices are more computationally efficient - preferred for
+  homogeneous data.
+\item Data frames are convenient for statistical analysis
+  (particularly for inclusion of categorical variables) - necessary
+  for heterogeneous data.
+\end{itemize}
+(Note: all data objects are ``vectors'' in the sense that they are a
+sequential collection of objects; objects vary in their attributes and
+methods defined for their class. Implication is that ``vector methods''
+will work for matrices, data frames, lists,
+etc. \footnotesize{\myhref{http://www.ibm.com/developerworks/linux/library/l-r3.html}{IBM
+Developer Works (D. Mertz)}})
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Example vector/matrix operations}
+\begin{columns}
+\column{0.5\textwidth}
+<<>>=
+(mat <- outer(1:2,1:2))
+diag(mat)
+replace(mat,upper.tri(mat),0)
+outer(1:2,1:2,paste,sep=",")
+expand.grid(vector1=1:2,vector2=1:3)
+@ 
+\column{0.5\textwidth}
+<<>>=
+t(mat)%*%mat
+mat - 1:2
+sweep(mat,2,1:2,"-")
+diff(1:3)
+prod(1:3)
+cumsum(1:3)
+sum(1:3)
+mean(1:3)
+@ 
+\end{columns}
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{``Factors''}
+\framesubtitle{The statistical nature of R}
+\begin{itemize}
+\item Factors are discrete, categorical variables (as opposed to
+  continuous variables) used for grouping.
+\item Can be obtained by dividing a continuous variableinto a limited
+  number of subsets (see \verb@cut@ function).
+\item Ordered or unordered.
+\item Implemented as integers mapped to names
+<<>>=
+set.seed(22)
+(tod <- factor(sample(c("Morning","Afternoon","Evening"),10,replace=TRUE),
+               levels=c("Morning","Afternoon","Evening"),
+               ordered=TRUE))
+(wk <- factor(sample(c("Weekday","Weekend"),10,replace=TRUE)))
+@ 
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{``Factors'' (continued)} 
+Continuing from the previous example - the integers are mapped to
+levels.
+<<>>=
+as.integer(tod)
+as.integer(wk)
+@ 
+<<results=tex>>=
+library(xtable)
+print(xtable(data.frame(Integer=1:nlevels(tod),Level=levels(tod))),
+      include.rownames=FALSE,size="\\footnotesize")
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{``Factors'' (continued)}
+There are many methods (functions) for factors.
+\begin{columns}[t]
+\column{.5\textwidth}
+\begin{block}{Contingency tables}
+<<>>=
+table(tod,wk)
+@ 
+\end{block}
+\column{.5\textwidth}
+\begin{block}{Mosaic plot}
+<<fig=True>>=
+plot(tod,wk)
+@ 
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Common tasks in data processing}
+Simplified view of data flow: \\
+generation $\to$ cleaning $\to$ storage
+$\to$ filtering/cleaning $\to$ analysis \\
+Desired procedures:
+\begin{itemize}
+\item Data I/O
+\item Extracting/subsetting
+\item Replacement
+\item Matching/merging
+\item Transformations (often arithmetic operations)
+\item Text processing/manipulation
+\end{itemize}
+Tools:
+\begin{itemize}
+\item Control structures (for, if, break, stop, while, etc.)
+\item Higher-order functions
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Arithmetic}
+
+The usual arithmetic operators/functions: 
+\begin{Verbatim}
++, -, *, /, ^,
+sum(), prod(), cumsum(), diff()
+%% (mod), %/% (integer division),
+floor(), ceiling(), round(), signif()
+\end{Verbatim}
+
+\medskip
+Matrix operators/functions:
+\begin{Verbatim}
+%*% (multiplication), t() (transpose), solve() (inverse)
+\end{Verbatim}
+
+\medskip
+See also 
+\begin{Verbatim}
+outer(), sweep(), apply()
+\end{Verbatim}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Special values}
+<<echo=False>>=
+options(width=40)
+@ 
+\begin{columns}[t]
+\column{0.35\textwidth}
+{\footnotesize{{\color{steelblue}\verb@NA@} - missing value. Test with
+    \verb@is.na()@.}} 
+<<>>=
+type.convert(c("3","","NA","5"," "))
+type.convert(c("3","#N/A","5","","NA"),na.strings="#N/A")
+type.convert(c("3","#N/A","5","","NA"),na.strings="#N/A",as.is=TRUE)
+3 * NA
+mean(c(3,NA,5))
+mean(c(3,NA,5),na.rm=TRUE)
+na.omit(c(3,NA,5))
+@ 
+\column{0.65\textwidth}
+{\footnotesize{Users can provide arguments to functions for how to
+    handle missing values. For instance,
+\begin{itemize}
+\item Statistical summaries: \verb@mean()@, \verb@min()@, \verb@max()@,
+\verb@range()@, etc. have 'na.rm' which can be \verb@{TRUE,FALSE}@.
+\item Regression functions (e.g., \verb@lm()@) can have argument 'na.action',
+  which can be \verb@na.omit@, \verb@na.fail@, \verb@na.exclude@.
+\item Other functions - varies. For instance, \verb@cor()@ (for correlation
+  coefficient) has argument 'use', which can be \verb@"all.obs"@,
+  \verb@"complete.obs"@ or \verb@"pairwise.complete.obs"@. 
+\end{itemize}
+For other functions, pass data using \verb@na.omit()@ or extract
+appropriate rows with 
+\verb@object[!is.na(object$variable),]@ or
+\verb@subset(object,!is.na(variable))@.}}
+
+{\footnotesize{{\color{steelblue}\verb@Inf@} - Infinity. Test with \verb@is.finite()@
+    (\verb@==Inf@ also works).}}
+<<>>=
+3/0
+@ 
+
+{\footnotesize{{\color{steelblue}\verb@NaN@} - not a number. Test with \verb@is.nan()@.}}
+<<>>=
+log(-1)
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Control structures and logical operators/functions}
+\begin{columns}[t]
+\column{0.5\textwidth}
+Functions:
+\begin{Verbatim}[fontsize=\small]
+## control structures
+for( elem in myListOrVector ) {...}
+if() else if() else
+stop()
+break()
+next() # continue
+
+## logical tests
+|, ||
+&, &&
+<, >, ==, !=
+any()
+all()
+is.na()
+is.finite()
+
+## negate predicate function/statement
+Negate()
+!
+\end{Verbatim}
+\column{0.5\textwidth}
+Conditional operators:
+\begin{itemize}
+\item returns single value: \verb@`||`, `&&`@
+\item returns vectored value: \verb@`|`, `&`@
+\end{itemize}
+Also, evaluation sequence differs:
+<<>>=
+ if( TRUE || log(-1) ) print("TRUE")
+ if( TRUE | log(-1) ) print("TRUE")
+@ 
+Infix operators in prefix notation:
+\begin{Verbatim}[fontsize=\small]
+`||`(TRUE,log(-1))
+`|`(TRUE,log(-1))
+`+`(2,2)
+\end{Verbatim}
+
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{*apply functions}
+
+Also see
+{\small{\myhref{http://www.r-project.org/doc/Rnews/Rnews\_2008-1.pdf}{R News
+  2008 Vol. 1 Help Desk}}} for tutorial on *apply functions.
+
+\begin{Verbatim}
+apply() # on matrices and arrays
+lapply() # on vectors and lists
+sapply() # on vectors and lists
+rapply() # on lists
+mapply() # on multiple vectors and lists
+\end{Verbatim}
+
+\medskip
+Some other higher order functions:
+\begin{Verbatim}
+Map()
+Filter()
+Reduce()
+Negate()
+\end{Verbatim}
+\end{frame}
+
+\begin{frame}
+\frametitle{Dates and times}
+At least three options:
+\begin{itemize}
+\item Dates - dates only
+\item chron - dates, times, no time zone
+\item POSIXt - dates, times, time zone
+\end{itemize}
+chron is highly recommended. See
+\myhref{http://cran.r-project.org/doc/Rnews/Rnews_2004-1.pdf}{R Help
+  Desk 2004 vol. 1 (G. Grothendieck)}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The chron package}
+\begin{itemize}
+\item Origins: Bell Labs c. 1993.
+\item Stored internally as days since epoch (default: 01/01/1970).
+\end{itemize}
+<<>>=
+library(chron)
+timestring <- c("7/17/2001 12:00:00","7/17/2001 15:00:00")
+(tms <- as.chron(strptime(timestring,"%m/%d/%Y %T")))
+diff(tms)
+as.numeric(tms)
+methods(class="chron")
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Coercion happens}
+\verb@as()@ called in functions. e.g., data frame coerced to matrix
+through \verb@as.matrix()@ in \verb@apply()@. So chron objects will be
+converted to numeric when passed to function to be mapped. Another
+example:
+<<>>=
+substring
+substring(1001,2)
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shell scripting}
+\begin{Verbatim}
+list.files() # can be a recursive search
+file.copy()
+file.rename()
+file.remove()
+dir.create()
+file.info()
+basename()
+dirname()
+...
+system() # pass shell commands in quotes (as character string)
+\end{Verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Data I/O functions}
+\begin{columns}[t]
+\column{0.5\textwidth}
+Text files:
+\begin{verbatim}
+## low level
+scan()
+readLines()
+print()
+cat()
+sink()
+writeLines()
+file(); close()
+
+## high level
+read.table()
+read.csv()
+read.delim()
+write()
+write.table()
+\end{verbatim}
+\column{0.5\textwidth}
+Graphics devices:
+\begin{verbatim}
+pdf()
+bitmap(,type="pdfwrite")
+postscript() ## PS
+postscript(onefile=FALSE) ## EPS
+bitmap()
+png()
+jpeg()
+tiff()
+svg() ## see package...
+...
+dev.copy()
+\end{verbatim}
+(and don't forget \verb@dev.off()@)
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Data I/O (continued)}
+R data structures: save(), load()\\
+
+Other formats: Relational databases, binary, ASCII: SQL, XML, NetCDF,
+HDF5, MS Excel, DBf files - see
+\myhref{http://cran.r-project.org/doc/manuals/R-data.html}{R Data
+  Import/Export manual}.\\
+
+RDBMS connections:
+\begin{itemize}
+\item Individual - RMySQL, RSQLite, ROracle, RdbiPgSQL, ...
+\item DBI - front end (common interface) to back ends
+  (RSQLite, {\bf{RMySQL}}, ...)
+\item ODBC - I use this one.
+\end{itemize}
+
+Connections - ``Connections are [...], a set of functions to replace
+the use of file names by a flexible interface to file-like objects. ``
+(R Data Import/Export Manual). Example:
+
+\begin{Verbatim}[font=\scriptsize]
+f <- file(filename)
+mat <- matrix(nrow=nr,ncol=nc)
+for( i in 1:nrow(mat) ) mat[i,] <- scan(f,nlines=1)
+close(f)
+\end{Verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Extracting/subsetting}
+
+\begin{center}
+{\small{\begin{tabular}{l|ccc}
+\hline\hline
+& \multicolumn{3}{c}{Object class}\\
+Mode & 1-D & 2-D & 3-D \\
+\hline
+atomic
+& \verb@[], [[]]@ & \verb@[,], [[,]]@ & \verb@[,,], [[,,]]@ \\ 
+\hline
+\parbox[c]{1in}{recursive\\(heterogeneous)} & 
+\verb@[], [[]], $@ & \begin{minipage}[c]{1in}\center
+data frame: \verb@[,], [[,]]@ or \verb@[], [[]]@ \\
+matrix: \verb@[,], [[,]]@ \end{minipage}
+& \verb@[,,], [[,,]]@ \\
+\hline\hline
+\end{tabular}}}
+\end{center}
+
+{\small{\begin{itemize}
+\item ``The most important distinction between \verb@[, [[ and $@ is that the
+      \verb@[@ can select more than one element whereas the other two select
+      a single element.'' 
+\item 2-D, 3-D, N-D: See \verb@x[i,j,...,drop=FALSE]@ to retain other
+dimensions.
+\item Also, see \verb@x[i,j,...,exact=FALSE]@ to enable partial matching.
+\item Partial matching enabled for \verb@`$`@ by default.
+\item (Each extraction operator has a corresponding replacement method.)
+\end{itemize}}}
+
+%% \begin{columns}[t]
+%% \column{0.5\textwidth}
+
+%% \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Extracting/subsetting (continued)}
+
+\begin{columns}[t]
+\column{0.5\textwidth}
+Examples with vector:
+<<>>=
+(vec <- c(a=5,b=2,c=3))
+vec[c("b","c")]
+vec[2:3]
+vec[c(FALSE,TRUE,TRUE)]
+indices <- vec < 4
+vec[indices]
+vec[-1]
+vec[-grep("a",names(vec))]
+vec[!names(vec)%in%"a"]
+@ 
+\column{0.5\textwidth}
+Same principles apply to lists, matrices, etc.\\
+List:
+<<>>=
+lis <- list(a=1:2,b=8,c=9:11)
+lis["a"]
+lis[["a"]]
+lis[c("b","c")]
+@ 
+
+On 2-D, N-D objects:\\
+\begin{Verbatim}[fontsize=\scriptsize]
+mat[,col.indices]
+mat[row.indices,]
+mat[,col.indices,drop=FALSE]
+mat[[,col.index]]
+mat[row.indices,col.indices]
+mat[twocolumnmatrix.indices]
+mat[vector.indices]
+arr[vec1,vec2,vec3]
+\end{Verbatim}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Extracting/subsetting (continued)}
+\begin{columns}[t]
+\column{0.5\textwidth}
+Object size attributes
+<<>>=
+attributes(mat)
+dim(mat)
+ncol(mat)
+nrow(mat)
+length(lis)
+length(vec)
+@ 
+Data frames: list with matrix-like methods:
+<<>>=
+data(airquality)
+head(airquality,3)
+@ 
+\column{0.5\textwidth}
+<<>>=
+head(airquality[airquality$Month > 6 & airquality$Temp > 25,],3)
+head(subset(airquality,Month > 6 & Temp > 25),3)
+head(airquality[["Temp"]])
+head(airquality[c("Ozone","Temp")],3)
+library(sqldf)
+head(sqldf("select * from airquality where Month > 6 and Temp > 25"),3)
+@ 
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Extraction - some gotchas}
+\begin{columns}[t]
+\column{0.5\textwidth}
+{\small{Behavior can vary with object when invalid extractions are requested:}}
+
+\begin{Verbatim}[fontsize=\scriptsize]
+## example data
+vec <- c(c=3,b=2)
+lis <- list(c=3,b=2)
+DF <- data.frame(c=2:3,b=1:2)
+mat <- cbind(c=2:3,b=1:2)
+
+## try these indices
+index <- "namenot in object"
+index <- 99999
+index <- numeric(0)
+index <- NULL
+index <- NA
+
+## on the data
+vec[index]
+vec[[index]]
+lis[index]
+lis[[index]]
+DF[index,]
+mat[index,]
+DF[,index]
+mat[,index]
+\end{Verbatim}
+\column{0.5\textwidth}
+{\small{Possible values:
+\begin{itemize}
+\item row/column/vector/list of NAs
+\item empty row/column/vector/list
+\item \verb@NULL@
+\item error
+\end{itemize}
+
+Also, 
+\begin{itemize}
+\item \verb@mat[1,]@ will return a vector (unless \verb@mat[1,,drop=FALSE]@).
+\item \verb@DF[1,]@ will return a data frame with one row. 
+\end{itemize}}}
+\begin{Verbatim}[fontsize=\scriptsize]
+## The result of the following
+## (assume 'value' has been initialized)
+for( i in 1:nrow(DF) ) 
+   value <- c(value,myfunction(DF[i,]))
+## may be different from
+value <- apply(DF,1,myfunction)
+## for this reason.
+\end{Verbatim}
+
+\end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Replacement functions}
+\begin{columns}[t]
+\column{0.5\textwidth}
+See\\
+\begin{Verbatim}[fontsize=\small]
+replace()
+ifelse()
+`[<-`() # and other 'setter' functions
+\end{Verbatim}
+\medskip
+Vector examples:
+<<>>=
+x <- 1:5
+replace(x,x<3,NA)
+ifelse(x<3,5:1,x)
+x[2] <- 3; x
+x[3:5] <- NA; x
+`[<-`(x,3:5,1:3)
+
+@ 
+\column{0.5\textwidth}
+With lists:
+<<>>=
+lis <- list(a=1,b=2,c=3:5)
+lis[[1]] <- 3
+lis[2:3] <- list(d=10,e=77)
+lis
+@ 
+
+With matrices:
+<<>>=
+(mat <- matrix(1:6,ncol=3))
+mat[2,3] <- NA
+mat[,3] <- NA
+mat
+mat[,2] <- replace(mat[,2], mat[,2]< -999,NA)
+@ 
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Replacement functions (continued)} 
+Preserve object attributes through replacement ('alter' is any
+function that transforms the *values* of the object):
+
+\begin{Verbatim}
+obj[] <- alter(obj)
+\end{Verbatim}
+
+\smallskip
+For instance, when we use \verb@lapply()@ on a data frame, a list is
+returned - but if we only wish to change the values (and not
+attributes of names, row.names, or length) we can use the following
+syntax to update the values of data frame 'DF':
+
+\begin{Verbatim}
+DF[] <- lapply(DF,function(x) replace(x,x < -999,NA))
+\end{Verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Merging operators/functions}
+\begin{verbatim}
+c() # concatenate
+cbind() # column bind
+rbind() # row bind
+match() # compare against lookup-table
+%in% # convenience function for match()
+union() # set operation
+intersection() # set operation
+merge() # powerful
+\end{verbatim}
+{\footnotesize{also see sqldf package to do SQL syntax}}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Text processing functions}
+\begin{columns}[5]
+\column{0.5\textwidth}
+\begin{Verbatim}
+paste()
+substr(); substring()
+nchar()
+strsplit()
+sub(); gsub()
+grep()
+regexpr(); gregexpr()
+match(); pmatch(); %in%
+`==`
+\end{Verbatim}
+\column{0.5\textwidth}
+apply functions and formulas to matched patterns - see package 'gsubfn':
+\begin{Verbatim}
+gsubfn()
+strapply()
+\end{Verbatim}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Exploratory data analysis}
+Purpose - find structure in the data: 
+\begin{itemize}
+\item 1-D distributions
+\item relationships among
+  categories and continuous variables.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Plotting} \framesubtitle{(Static graphics)} (Too) Many
+options:
+\begin{itemize}
+\item base (traditional) - most common
+\item grid - low level, scalable
+\myhref{http://www.r-project.org/user-2006/Slides/Murrell.pdf}{Grid
+introduction (P. Murrell)}
+\item lattice - high-level, useful for exploratory data
+  analysis. \myhref{http://user2007.org/program/presentations/sarkar.pdf}{Lattice
+  presentation (D. Sarkar)}
+\item ggplot2 - in development, high-level. based on concepts from
+  Grammar of Graphics by Lee Wikinson (2005). \myhref{http://had.co.nz/ggplot2/}{ggplot2
+  page (H. Wickam)}
+\item additional packages for specialized plots (polar, windrose,
+  microarray analysis, etc.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Traditional graphics}
+\framesubtitle{Partial listing of functions}
+\begin{columns}[t]
+\column{0.275\textwidth}
+See \verb@par()@ for graphical parameters.\\
+
+Low-level routines:\\
+\begin{Verbatim}[fontsize=\small]
+plot.new()
+plot.window()
+axis()
+box()
+lines()
+points()
+matlines()
+matpoints()
+segments()
+arrows()
+text()
+mtext()
+legend()
+rect()
+polygon()
+## 'interactive':
+identify()
+locator()
+\end{Verbatim}
+\column{0.275\textwidth}
+Layout: \verb@layout()@\\
+
+High level routines:
+\begin{Verbatim}[fontsize=\small]
+## 1-D
+stripchart()
+barplot()
+hist()
+boxplot()
+plot(density())
+qqplot()
+
+## 2-D
+plot()
+matplot()
+mosaic()
+dotchart()
+pairs()
+coplot()
+\end{Verbatim}
+
+\column{0.45\textwidth}
+\begin{Verbatim}[fontsize=\small]
+## 3-D
+heatmap()
+image()
+image.plot() # in library fields
+contour
+filled.contour()
+persp() # use wireframe in lattice
+scatterplot3d() # library scatterplot 3d
+\end{Verbatim}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Customizing (base) plots}
+\begin{itemize}
+\item Superposition of graphical elements (see also \verb@par(new=TRUE)@)
+\item Greek symbols with language objects:
+\verb@expression(), substitute(), bquote()@. See \verb@demo(plotmath)@
+\item Fonts, color, margins, layouts - see
+  \myhref{http://www.stat.auckland.ac.nz/~paul/RGraphics/chapter3.html}{R
+    Graphics (P. Murrell)}. Use 'mfrow', 'mfrow' in \verb@par()@, or,
+  if more complex, \verb@layout()@; see other parameters in
+  \verb@par()@.
+\item Mapping of aesthetic properties to data (graphical elements).
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Layouts (traditional graphics)}
+<<echo=False>>=
+options(width=53)
+@ 
+<<echo=False>>=
+x <- pmin(3, pmax(-3, stats::rnorm(50)))
+y <- pmin(3, pmax(-3, stats::rnorm(50)))
+xhist <- hist(x, breaks=seq(-3,3,0.5), plot=FALSE)
+yhist <- hist(y, breaks=seq(-3,3,0.5), plot=FALSE)
+top <- max(c(xhist$counts, yhist$counts))
+xrange <- c(-3,3)
+yrange <- c(-3,3)
+@ 
+\begin{columns}[t]
+\column{0.5\textwidth}
+<<label=justnf,include=False>>=
+nf <- layout(matrix(c(2,0,1,3),2,2,byrow=TRUE), c(3,1), c(1,3), TRUE)
+layout.show(nf)
+@ 
+\column{0.5\textwidth}
+<<label=onlayout,includ=False>>=
+nf <- layout(matrix(c(2,0,1,3),2,2,byrow=TRUE), c(3,1), c(1,3), TRUE)
+par(mar=c(3,3,1,1))
+plot(x, y, xlim=xrange, ylim=yrange, xlab="", ylab="")
+par(mar=c(0,3,1,1))
+barplot(xhist$counts, axes=FALSE, ylim=c(0, top), space=0)
+par(mar=c(3,0,1,1))
+barplot(yhist$counts, axes=FALSE, xlim=c(0, top), space=0, horiz=TRUE)
+@ 
+\end{columns}
+\begin{columns}[t]
+\column{0.5\textwidth}
+<<fig=True,echo=False>>=
+<<justnf>>
+@ 
+\column{0.5\textwidth}
+<<fig=True,echo=False>>=
+<<onlayout>>
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Example data set}
+\framesubtitle{(Included in R)}
+<<echo=False>>=
+options(width=45)
+@ 
+\begin{columns}[t]
+\column{0.5\textwidth}
+Load data set:
+<<>>=
+data(airquality)
+head(airquality)
+@ 
+Query its properties:
+<<>>=
+class(airquality)
+sapply(airquality,class)
+@ 
+\column{0.5\textwidth}
+\verb@cut()@ will create discrete categories from a continuous variable.
+<<>>=
+head(cut(airquality$Solar.R,breaks=4))
+@ 
+\small{Broken into four equal intervals. Is this reasonable? (makes sense
+when distribution is uniform).}
+<<fig=True,width=6,height=4>>=
+plot(density(na.omit(airquality$Solar.R)))
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Mapping aesthetic properties}
+<<echo=False>>=
+options(width=40)
+@
+\begin{columns}[t]
+\column{0.5\textwidth}
+{\footnotesize{
+\begin{itemize}
+\item 
+\myhref{http://www.stat.auckland.ac.nz/~paul/RGraphics/custombase-datasymbols.png}{Plotting
+  characters}
+\item Color functions - colors, col2rgb, rgb, hsv, gray, rainbow,
+  terrain.colors, coloRamp, palette, hcl, topo.colors. heat.colors,
+  tim.colors (in package 'fields'), ...
+\item rgb() supports alpha transparency
+\item RColorBrewer:
+<<fig=True,echo=False>>=
+library(RColorBrewer)
+par(cex=0.8)
+display.brewer.all(7)
+@ 
+\end{itemize}
+}}
+\column{0.5\textwidth}
+<<fig=True>>=
+with(airquality,plot(Temp,Ozone,pch=Month,col=unclass(cut(Solar.R,breaks=4))))
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Multipanel (conditioning) plots}
+<<echo=False>>=
+options(width=40)
+@
+\begin{columns}[t]
+\column{0.5\textwidth}
+\begin{itemize}
+\item Trellis plots (Bell Labs, ca. 1990-1995) implemented in lattice package.
+\item Lattice:
+\begin{itemize}
+\item built on grid graphics; highly customizable - (but very difficult).
+\item lattice contains own set of functions to produce types of plots
+ found in traditional
+graphics. \tiny{\myhref{http://www.stat.auckland.ac.nz/~paul/RGraphics/simplegrid-latticeplots.png}{R
+Graphics (P. Murrell)}}
+\end{itemize}
+\item Ideal for quick EDA plots.
+\end{itemize}
+\column{0.5\textwidth}
+<<fig=True,width=6,height=5.5>>=
+library(lattice)
+out <- xyplot(Ozone~Temp|factor(Month),data=airquality,groups=cut(Solar.R,4),
+       auto.key = list(x = .75, y = .35, corner = c(0, 1),title="Solar.R"),
+       par.settings=list(superpose.symbol=list(pch=19)),
+       as.table=TRUE,main="Ozone vs. Temp by Month")
+print(out)
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}
+\frametitle{Additional (static) graphics links}
+\begin{itemize}
+\item
+\myhref{http://addictedtor.free.fr/graphiques/}{R
+Graph Gallery}
+\item
+\myhref{http://wiki.r-project.org/rwiki/doku.php?id=tips:tips\#graphics}{R
+        wiki: graphics}
+\item
+\myhref{http://www.stat.auckland.ac.nz/~paul/RGraphics/rgraphics.html}{R
+        Graphics (P. Murrell)}
+\item
+\myhref{http://cran.r-project.org/web/views/Graphics.html}{CRAN
+        Task View: Graphics}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Debugging and error handling}
+\begin{itemize}
+\item Error handling functions:
+\begin{verbatim}
+try()
+tryCatch()
+\end{verbatim}
+See
+\myhref{http://www1.maths.lth.se/help/R/ExceptionHandlingInR/}{Exception
+  Handling in R} for details on the \verb@tryCatch()@ function.
+\item Debugging functions:
+\begin{verbatim}
+debug() # call *on* function
+browser() # place *in* function
+trace()
+recover()
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Functional approach to statistical analysis}
+\begin{itemize}
+\item Call function on matrices or data tables.
+\item Function will return a single value, which is an object
+  containing information about the analysis.
+\item Additional functions (often generically defined) may aid in
+  the interpretation of results (e.g., \verb@plot()@,
+  \verb@summary()@) and extraction of desired pieces of information.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Statistical summaries}
+\begin{itemize}
+\item summary()
+\item split() + lapply()
+\item tapply(), aggregate(), by(), ...
+\item reshape package
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Aggregating functions}
+<<echo=False>>=
+options(width=110)
+@
+{\footnotesize{split() + lapply()}}
+<<>>=
+colMeans(airquality,na.rm=TRUE)
+
+aq <- airquality
+aq$SolarFactor <- cut(aq$Solar.R,4)
+
+obj <- split(aq,f=aq$Month)
+names(obj)
+head(obj[["7"]],3)
+sapply(obj,function(X) 
+  round(with(X,cor(Temp,Ozone,use="pairwise.complete")),2))
+@ 
+
+{\footnotesize{Alternative - by()}}
+<<>>=
+unclass(by(aq,aq[c("Month","SolarFactor")],function(X)
+  round(with(X,cor(Temp,Ozone,use="pairwise.complete")),2)))
+@ 
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{reshape package} 
+
+R's \verb@reshape@ package borrows concepts from OLAP cubes and Excel
+Pivot tables - exists for syntactic convenience but is not really a
+proper implementation of OLAP cube (that is to say, it's not fast nor
+necessarily suited for large data sets).
+
+<<>>=
+library(reshape)
+vars <- names(aq)[!names(aq)%in%c("Wind","Day","Solar.R")]
+m <- melt(aq[,vars],id=c("Month","SolarFactor"))
+head(m,3)
+head(cast(m,Month+SolarFactor~variable,mean,na.rm=TRUE),3)
+head(cast(m,Month~variable,range,na.rm=TRUE),3)
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Building (statistical) models and statistical inference}
+<<echo=False>>=
+options(width=45)
+@ 
+\begin{columns}
+\column{0.5\textwidth}
+<<>>=
+DF <- data.frame(x=1:10,y=5+2*(1:10)+rnorm(10,0,5))
+@ 
+<<label=dataplot,include=False>>=
+plot(DF)
+@ 
+\begin{itemize}
+\item Linear model (ordinary least squares regression)
+<<label=lm,include=False>>=
+abline(coef(lm(y~x,DF)),col=2)
+@ 
+\item Robust regression
+<<label=rlm,include=False>>=
+library(MASS)
+abline(coef(rlm(y~x,DF)),col=3)
+@ 
+\item Total least squares
+<<label=rma,include=False>>=
+library(smatr)
+abline(line.cis(DF$y,DF$x)[,1],col=4)
+@ 
+\end{itemize}
+\column{0.5\textwidth}
+Add legend:
+<<label=legd,include=False>>=
+legend("topleft",col=2:4,c("lm","rlm","rma"),lty=1)
+@ 
+<<fig=True,echo=False>>=
+<<dataplot>>
+<<lm>>
+<<rlm>>
+<<rma>>
+<<legd>>
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Formula objects}
+%% \begin{columns}[t]
+%% \column{0.5\textwidth} 
+{\small{Example. Regress y on x: \verb@y ~ x@; no intercept,
+\verb@y ~ x - 1@. Qualitative (dummy) variables implemented by factors
+        {\scriptsize{(qualitative variables - ``test for different
+            slopes or intercepts in the populations, and more degrees
+            of freedom are available for the analysis'' (SAS
+            documentation))}}. Interactions with
+        \verb@*@. Disambiguation between formula and arithmetic
+        notation - use \verb@I()@. An example of its usage is shown
+        below {\scriptsize{(when constructing a formula for a linear model, you
+        should first check to see that the linearity assumption is
+        valide - not done here)}}.}}
+<<>>=
+data(airquality)
+(vars <- local({x <- names(airquality)
+               x[!x%in%c("Ozone","Day")]}))
+(f <- as.formula(paste("Ozone ~",paste(vars,collapse="+"))))
+lm(f,data=`[<-`(airquality,,"Month",value=factor(airquality$Month)))
+@ 
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Regression objects}
+<<echo=False>>=
+options(width=45)
+@ 
+\begin{columns}[t]
+\column{0.4\textwidth}
+<<fig=True>>=
+out <- lm(y~x,DF)
+par(mfrow=c(2,2),mar=c(4,4,1.5,1.5),mgp=c(2.5,1,0))
+plot(out)
+@ 
+\column{0.6\textwidth}
+<<>>=
+summary(out)
+@ 
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Regression objects (continued)}
+\begin{columns}[t]
+\column{0.6\textwidth}
+<<>>=
+str(out)
+@ 
+\column{0.4\textwidth}
+<<>>=
+methods(class=class(out))
+methods(confint)
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Longitudinal data in wide and long formats} 
+
+\begin{itemize}
+\item May be easier to use in statistical/graphics functions in an
+  altered different format.
+\item Long vs. wide?
+\item Many options - 
+\begin{itemize}
+\item \verb@unstack()@ + \verb@stack()@
+\item \verb@reshape()@ function
+\item \verb@melt()@, \verb@cast()@, and \verb@recast()@ in package
+  'reshape' (good tradeoff between ease-of-use and power)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Reshape example}
+<<echo=False>>=
+options(width=100)
+@ 
+<<>>=
+library(reshape)
+(mat <- `dimnames<-`(sub("(.*)","value[\\1]",outer(1:2,1:2,paste,sep=",")),
+                                 list(time=paste("Time",1:2,sep=""),
+                                      supersaturation=
+                                      paste("SS%=",c(0.2,0.5),sep=""))))
+(longf <- melt(mat))
+(widef <- cast(longf,supersaturation~time))
+@ 
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Not just for sequential data}
+<<echo=False>>=
+options(width=100)
+@ 
+<<>>=
+(mat <- `dimnames<-`(sub("(.*)","value[\\1]",outer(1:2,1:2,paste,sep=",")),
+                                 list(treatment=paste("Treatment",1:2,sep=""),
+                                      patient=paste("Patient",1:2,sep=""))))
+(longf <- melt(mat))
+(widef <- cast(longf,patient~treatment))
+@ 
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{But we can also add a sequential dimension}
+<<echo=False>>=
+options(width=45)
+@ 
+\begin{columns}
+\column{0.55\textwidth}
+{\footnotesize{The previous examples have resulted in transposed
+    matrices of the original, but here we show the wide $\to$ long
+    $\to$ wide transformation is more general:}}
+<<>>=
+mat <- `dimnames<-`(sub("(.*)","value[\\1]",outer(1:4,1:2,paste,sep=",")),
+                                 list(treatment=paste("Treatment",rep(1:2,2),
+                                        sep=""),
+                                      patient=paste("Patient",1:2,sep="")))
+(DF <- data.frame(time=paste("Time",rep(1:2,each=2),sep=""),
+                  treatment=rownames(mat),mat,
+                  row.names=1:nrow(mat)))
+@ 
+\column{0.45\textwidth}
+<<>>=
+(longf <- melt(DF,id.var=c("time","treatment")))
+(widef <- cast(longf,variable+treatment~time))
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}
+\frametitle{Statistical analysis}
+\framesubtitle{Partial listing}
+\begin{itemize}
+\item Classical statistics, robust, non-parameteric, ...
+\item Linear models, nonlinear least squares (NLS), generalized least
+  squares (GLS), generalized linear models (GLMs), generalized
+  additive models (GAMs), local regression and other linear smoothers,
+  optimization with linear constraints, structured equation modeling,
+  mixture models, fixed/mixed-effects models, survival analysis,
+  discriminant analysis...
+\item Model selection criteria: ANOVA (F-statistic), AIC, BIC,
+  cross-validation, ...
+\item Bootstrapping (MC) ...
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Chemometric methods}
+\framesubtitle{Partial listing}
+\begin{itemize}
+\item Factor analysis and matrix decomposition
+\item Clustering (unsupervised learning)
+\item Machine learning (supervised learning)
+\item Signal processing
+\begin{itemize}
+\item Filters
+\item Wavelets
+\end{itemize}
+\item Time series analysis
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Additional links}
+\myhref{http://cran.r-project.org/web/views/}{CRAN
+Task Views}
+\begin{itemize}
+\item Cluster analysis
+\item Machine learning
+\item Optimization
+\item Robust
+\item Environmetrics (geospatial analysis)
+\end{itemize}
+\end{frame}
+
+\section{Language aspects}
+\begin{frame}
+\frametitle{Concise language description}
+\begin{itemize}
+\item Interpreted scripting language.
+\item OOP - ``generic functions'' (Lisp CLOS)
+\begin{itemize}
+\item S3 - simple and informal; no attribute checking, etc. class
+  attribute only used for method dispatch.
+\item S4 - formal system; permits multiple dispatch.
+\end{itemize}
+\item Functional-style
+\begin{itemize}
+\item functions as first-class objects
+\item lexical (static) scoping with closures
+\item anonymous functions
+\item higher-order functions; function factories
+\item lazy evaluation, ``promise'' objects
+\item pass-by-value only (memory-intensive)
+\end{itemize}
+\item Implementation of namespaces.
+\item Sophisticated pattern matching and '...' notation.
+\item Pass list of arguments to function.
+\item ``Computing on the language'' - modify language objects.
+\item Parallelizable(?) - Snow package.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Namespaces}
+\begin{itemize}
+\item Each library/package in its own namespace; public functions are
+  ``exported''.
+\item ``Environments'' can be used as namespaces
+\item Syntactic convenience - \verb@attach()@ environments to search path
+<<>>=
+search()
+@ 
+
+$\to$ explicit reference to namespace for variables and functions no longer
+required, as long as they are first on the search path.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Namespaces (continued)}
+\begin{columns}
+\column{0.6\textwidth} 
+
+Create a namespace and assign a function, 'plot', in it (there is
+already a function called 'plot' provided by the 'graphics'
+package/namespace; naming conflict is intentional)
+<<>>=
+mynamespc <- new.env()
+assign("plot",function(x,...) graphics::plot(x^2,...),envir=mynamespc)
+@
+
+Plot using original (default) 'plot' function, and then using the
+'plot' function in my namespace
+<<label=namespcplot,include=False>>=
+par(mfrow=c(2,1),mar=c(4,4,1.5,1.5),mgp=c(2.5,1,0),pty="s")
+plot(1:10,type="o")
+get("plot",mynamespc)(1:10,type="o")
+@ 
+
+Because 'graphics' is on the search() path and 'mynamespc' is not,
+invocation of plot() (without explicit reference to namespace) will
+bind the definition in the 'graphics' namespace rather than the one I
+created.  
+
+\column{0.4\textwidth}
+<<fig=True,echo=False,width=3,height=6>>=
+<<namespcplot>>
+@ 
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Namespaces (continued)}
+\begin{columns}[t]
+\column{0.6\textwidth}
+Assign my \verb@plot()@ to Global space (first in search path):
+<<>>=
+plot <- get("plot",mynamespc)
+@ 
+Function invocation (should produce a plot according to the function
+I defined):
+<<fig=True>>=
+plot(1:10,type="o")
+@ 
+<<echo=False>>=
+rm(plot)
+@ 
+\column{0.4\textwidth}
+To use the original \verb@plot()@ function:
+\small{\begin{verbatim}
+graphics::plot
+\end{verbatim}}
+
+or
+\small{\begin{verbatim}
+get('plot',
+    grep('graphics',
+         search()))
+\end{verbatim}}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Evaluation frames (environments)}
+<<echo=False>>=
+options(width=50)
+@
+\begin{columns}
+\column{0.6\textwidth} 
+Tell R which environment's values should be bound to symbols at the
+time of evaluation.
+<<>>=
+x <- 1:10; y <- 2*x+rnorm(10,,0.5)
+DF <- data.frame(x=31:40,y=-y)
+@ 
+<<label=evalplot,include=False>>=
+par(mfrow=c(2,1),mar=c(4,4,1.5,1.5),mgp=c(2.5,1,0),pty="s")
+plot(x,y)
+with(DF,plot(x,y))
+@ 
+
+\footnotesize{Alternate syntax: \verb@evalq(plot(x,y),DF)@ or
+  \verb@local(plot(x,y),DF)@.} 
+\column{0.4\textwidth}
+<<fig=True,echo=False,width=3,height=6>>=
+<<evalplot>>
+@ 
+\end{columns}
+<<echo=False>>=
+<<defw>>
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Computing on the language}
+\framesubtitle{Simple example}
+R has three types of language objects: calls, expressions, and names.
+<<>>=
+qobj <- quote(cor(x,y))
+DF <- data.frame(x=1:5,y=c(3,2,5,7,9),z=c(1,1,1,2,2))
+eval(qobj,DF)
+deparse(qobj)
+eval(parse(text=sub("y","z",deparse(qobj))),DF)
+as.list(qobj)
+@ 
+\end{frame}
+%% http://www.wsl.ch/staff/christian.hoffmann/R-Howto.ehtml
+
+\begin{frame}[fragile]
+\frametitle{What is an expression good for?}
+\framesubtitle{R-help post, Thu 01 Mar 2007 (G. Grothendieck)}
+``You can evaluate it, differentiate it, pick apart its components, use
+it as a title or legend in a plot, use it as a function body and
+probably other things too:''
+\begin{columns}[t]
+\column{0.5\textwidth}
+<<>>=
+e <- expression(x+y)
+eval(e, list(x = 1, y = 2)) # 3
+D(e, "x")
+e[[1]][[1]] # +
+e[[1]][[2]] # x
+e[[1]][[3]] # y
+f <- function(x,y) {}
+body(f) <- e
+f(1,2) # 3 
+@ 
+\column{0.5\textwidth}
+<<fig=True>>=
+plot(1:10, main = e)
+legend("topleft", e, pch = 1)
+@ 
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Functions}
+Provide arguments in/as a list:
+<<label=plotargs,include=False>>=
+plotargs <- c(DF[c("x","y")],col=2,pch=19)
+axisargs <- list(side=1,at=axTicks(1),label=letters[seq(along=axTicks(1))])
+do.call(plot,plotargs)
+do.call(axis,axisargs)
+@  
+\begin{columns}[t]
+\column{0.3\textwidth}
+\column{0.4\textwidth}
+<<fig=True,echo=False>>=
+<<plotargs>>
+@ 
+\column{0.3\textwidth}
+\end{columns}
+Other methods of object construction and evaluation (axis example):
+<<eval=False>>=
+eval(with(axisargs,call("axis",side=side,at=at,label=label)))
+eval(as.call(c(axis,axisargs)))
+eval(quote(axis(side=1,at=axTicks(1),label=letters[seq(along=axTicks(1))])))
+@ 
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Functions (continued)} 
+\begin{columns}[t]
+\column{0.5\textwidth}
+Modify function objects
+<<>>=
+f <- function(x,y=5) x + y
+f(3)
+as.list(f)
+formals(f) <- alist(x=,z=2)
+body(f) <- quote(x+z)
+f
+f(3)
+@ 
+\column{0.5\textwidth}
+{\color{red}\emph{Important:}} Arguments can be passed to functions in the
+order of the formal argument list, or in any order as long as keyword
+(argument name) is provided, even partially (to the extent that the
+provided letters uniquely identify the argument).
+<<>>=
+mod <- function(foo,bar) foo %% bar
+mod(22,4)
+mod(bar=4,foo=22)
+mod(b=4,f=22)
+@ 
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Functions (continued)}
+\begin{columns}[t]
+\column{0.5\textwidth}
+Alternatives for defining local/bound variables
+<<>>=
+a <- 100
+f2 <- function(x,y=a,z,v=10) {
+  a <- 2
+  if(missing(z)) z <- 1
+  x + y + z + v
+}
+f2(3,5,2)
+f2(3)
+@ 
+\column{0.5\textwidth}
+The \verb@'...'@ notation:
+<<echo=False>>=
+options(width=55)
+@ 
+<<fig=True>>=
+myplot <- function(x,y,...) plot(x,y,pch=19,...)
+par(mfrow=c(2,1),mar=c(4,4,1.5,1.5))
+myplot(1:5,1:5)
+myplot(1:5,1:5,col=2)
+@ 
+<<echo=False>>=
+<<defw>>
+@ 
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Functions (continued)}
+{\small{
+\begin{columns}[t]
+\column{.5\textwidth}
+Lazy evaluation:
+
+\medskip
+\begin{Verbatim}[fontsize=\scriptsize]
+## In this case, y is not evaluated
+> foo <- function(x,y) x
+> foo(5,log(-1))
+[1] 5
+## We modify the function such that 
+## y is evaluated (though not used)
+> body(foo) <- quote({y;x})
+> foo
+function (x, y) 
+{
+    y
+    x
+}
+> foo(5,log(-1))
+[1] 5
+Warning message:
+In log(-1) : NaNs produced
+\end{Verbatim}
+\medskip
+\emph{See also} \verb=delayedAssign()=.
+\column{.5\textwidth}
+\emph{Attaching data to functions}. This behavior is surprising to most people:
+<<>>=
+a <- 1
+bar <- function(x,y=a) x + y
+a <- 2
+bar(1)
+@ 
+Default argument value is evaluated when function is evaluated; not when the function is defined (different from many other languages). To fix the value, use lexical scoping:
+<<>>=
+bar <- with(list(a=1),function(x,y=a) x + y)
+a <- 2
+bar(1)
+@ 
+\vspace{-2ex}
+\begin{minipage}{\textwidth}
+<<>>=
+bar <- local({
+  a <- 1
+  function(x,y=a) 
+    x + y
+})
+a <- 2
+bar(1)
+@ 
+\end{minipage}
+\end{columns}
+}}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Functions (continued)}
+Find out what arguments were passed to function (often used for
+automatic labeling of plot axes):
+<<>>=
+bar <- function(x,y,...) {
+   sapply(match.call()[-1], deparse)
+}
+bar(1:2, 1:3, bar=5)
+@ 
+\end{frame}
+
+\section{Advanced R}
+\begin{frame}
+\frametitle{Advanced features (demo...)}
+\begin{itemize}
+\item Interactive graphics (rgl, RGGOBI, iPlots)
+\item Database connectivity (MySQL, SQLite, Oracle, ...).
+\item sqldf - manipulate data frames with SQL syntax
+\item Shell scripting
+\item Text processing
+\item Sweave (R + LaTeX)
+\item Computer Modern fonts (\small{\myhref{http://www.stat.auckland.ac.nz/~paul/R/CM/CMR.html}{Using Computer
+  Modern Fonts in R Graphics (P. Murrell)}})
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Working with large data sets}
+\begin{itemize}
+\item Don't load all variables at once - do you really need them?
+\item Use a database (functions in R libraries exist to directly load
+  data into DBs without going through R) \& pull off variables/subsets
+  as you need them.
+\item Don't keep multiple copies of your data in the workspace.
+\item Use more primitive functions and elements. (For loops, etc. to
+  work on sections of the data)
+\item When plotting, selectively use 'sample()'
+\item Use local() and rm() to clear workspace when necessary, gc() to
+  check memory usage.
+\item Efficient algorithms - package 'biglm', ...
+\item Hadoop?
+\item ff - ``The ff package provides atomic data structures that are
+  stored on disk but behave (almost) as if they were in RAM by
+  transparently mapping only a section (pagesize) in main
+  memory[...]'' 
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{R}
+\framesubtitle{Getting started and reference}
+\begin{itemize}
+\item
+\myhref{http://cran.r-project.org}{Download}
+at \verb@http://cran.r-project.org@.
+\item
+2 releases/yr - 1 major, 1 minor; accompanied by
+\myhref{http://cran.r-project.org/doc/Rnews/}{R News} article.
+\item Install and run multiple versions simultaneously.
+\item
+Programming environment: \myhref{http://ess.r-project.org/}{(X)Emacs +
+  ESS} or \myhref{http://www.sciviews.org/\_rgui/projects/Editors.html}{list
+of compatible editors}
+\item
+A few manuals and tutorials:
+\begin{itemize}
+\item
+\small{\myhref{http://cran.r-project.org}{Manuals and tutorials}}
+\item
+\small{\myhref{http://wiki.r-project.org/rwiki/}{R
+        wiki}}
+\item
+\small{\myhref{http://www.burns-stat.com/pages/tutorials.html}{Patrick
+    Burns's tutorials}}
+\item
+\small{\myhref{http://www.burns-stat.com/pages/spoetry.html}{S Poetry
+    (P. Burns)}}
+\item
+\small{\myhref{http://socserv.mcmaster.ca/jfox/Courses/UCLA/index.html}{Introduction
+to Statistical Computing in R (J. Fox)}}
+\item
+\small{\myhref{http://mathesaurus.sourceforge.net/}{Math
+Thesaurus}}
+\item
+Find S-PLUS Guide to Statistics Vols. 1 \& 2 (S-PLUS 8.0 is made to be
+compatible with R).
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Seek help}
+{\footnotesize{Function documentation:}}
+\begin{Schunk}
+\begin{Sinput}
+> options(htmlhelp=TRUE)
+> ?plot
+> help("plot")
+> apropos("keyword")
+> help.search("keyword")
+> RSiteSearch("keyword")
+## Sometimes you can use backtick quotes, as in
+   `==`, or capital letters as in ?Quotes.
+\end{Sinput}
+\end{Schunk}
+
+\medskip
+{\footnotesize{Format of help file:}}
+{\footnotesize{\begin{itemize}
+\item Description
+\item Usage
+\item Arguments
+\item Value
+\item References
+\item See Also
+\item Examples
+\end{itemize}}}
+
+{\footnotesize{Also post to the R-help mailing list at
+    \verb1r-help@stat.math.ethz.ch1. Read the
+    \myhref{http://www.r-project.org/posting-guide.html}{Posting
+      Guide}:}} 
+{\footnotesize{\begin{itemize}
+\item Do some basic searches first (using the last three help commands above)
+\item Submit a reproducible piece of code that illustrates your error
+  or the problem you are trying to solve.
+\end{itemize}}}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Searching the web}
+Google with ``CRAN'' in search term, or use one of these sites:
+\begin{itemize}
+\item
+\small{\myhref{http://www.rseek.org}{Rseek.org}}
+\item
+\small{\myhref{http://finzi.psych.upenn.edu/search.html}{R
+Site Search}}
+\item
+\small{\myhref{http://www.dangoldstein.com/search\_r.html}{R
+Search}}
+\item
+\small{\myhref{http://tolstoy.newcastle.edu.au/R/}{R-help
+list archives}}
+\end{itemize}
+\end{frame}
+
+\end{document}
